@@ -1,0 +1,65 @@
+module Inventory where
+
+type ProductId = ContractId Product
+type InventoryCid = ContractId Inventory
+
+data ProductType = Crops | Livestock | Aquatic | Pending deriving (Eq, Show)
+
+template Product
+  with
+    producer  : Party
+    owner     : Party
+    label     : Text
+    quantity  : Decimal
+    unit      : Text
+    observers : [Party]
+  where
+    signatory producer
+    observer observers
+
+    controller producer can
+      Add_Inventory : InventoryCid
+        with
+          newOwner : Party
+        do
+          thisProduct <- create this
+          create Inventory with
+            product = thisProduct
+            productSymbol = label
+            productType = Pending
+            owner =  newOwner
+            vendor = newOwner
+
+      SetQuantity : ProductId
+        with
+           newQuantity : Decimal
+        do create this with quantity = newQuantity
+
+      Disclose : ProductId
+        with users : [Party]
+        do create this with observers = users
+
+    controller owner can
+      Transfer : ProductId
+        with newOwner : Party
+        do create this with owner = newOwner
+
+template Inventory
+  with
+    owner         : Party
+    vendor        : Party
+    product       : ProductId
+    productSymbol : Text
+    productType   : ProductType
+  where
+    signatory owner
+    observer vendor
+
+    controller owner can
+      Set_Type : InventoryCid
+        with usedType : ProductType
+        do create this with productType = usedType
+
+      Settle : ProductId
+        with buyer : Party
+        do exercise product Transfer with newOwner = buyer

@@ -1,0 +1,63 @@
+module PriceWatch where
+
+type PriceWatchCid = ContractId PriceWatch
+type PricingProposalCid = ContractId PricingProposal
+
+template PriceWatch
+  with
+    issuer         : Party
+    owner          : Party
+    productSymbol  : Text
+    basePrice      : Decimal
+    retailPrice    : Decimal
+    currency       : Text
+    locked         : Bool
+
+  where
+    signatory owner, issuer
+
+    let toggleLockPricing = create this with locked = not(this.locked)
+
+    controller issuer can
+      Propose : PricingProposalCid
+        with
+          newOwner : Party
+        do
+          pricingCid <- create this with locked = False
+          create PricingProposal with issuer, pricing = pricingCid, owner = newOwner
+
+      SetBasePrice : PriceWatchCid
+        with
+          newBasePrice : Decimal
+        do create this  with basePrice = newBasePrice
+
+      ToggleLockPricing : PriceWatchCid
+        do toggleLockPricing
+
+    controller owner can
+      Confirm : PriceWatchCid
+        with
+          confirmed : Party
+        do create this with owner = confirmed
+
+      SetRetailPrice : PriceWatchCid
+        with
+          newPrice : Decimal
+        do
+          assertMsg "Retail price is currently locked. You are not allowed to change its price" (this.locked == True)
+          create this with retailPrice = newPrice
+
+template PricingProposal
+  with
+    issuer   : Party
+    pricing  : PriceWatchCid
+    owner : Party
+  where
+    signatory issuer
+
+    controller owner can
+      Accept : PriceWatchCid
+        do exercise pricing Confirm with confirmed = owner
+
+      Decline : ()
+        do return ()

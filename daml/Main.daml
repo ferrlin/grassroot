@@ -1,0 +1,70 @@
+module Main where
+
+import Daml.Script
+
+import MarketStall
+import PriceWatch
+
+setup : Script ()
+setup = do
+  alice <- allocatePartyWithHint "Alice" (PartyIdHint "Alice")
+  bob <- allocatePartyWithHint "Bob" (PartyHint "Bob")
+  mra <- allocatePartyWithHint "MRA" (PartyIdHint "MRA")
+
+  priceWatchId <- submit mra do
+    createCmd
+      PriceWatch with
+        issuer
+        owner = mra
+        productSymbol = "TMT"
+        basePrice = 0.45
+        retailPrice = 1.20
+        currency
+        locked = False
+
+  pwProposalAliceCid <- submit mra do
+    createCmd
+      PricingProposal with
+        issuer
+        pricing = priceWatchId
+        newOwner = alice
+
+  pwAcceptAliceCid <- submit alice do
+    exerciseCmd pwProposalAliceCid Accept
+
+
+pure ()
+-- type AssetId = ContractId Asset
+
+-- template Asset
+--   with
+--     issuer : Party
+--     owner  : Party
+--     name   : Text
+--   where
+--     ensure name /= ""
+--     signatory issuer
+--     controller owner can
+--       Give : AssetId
+--         with
+--           newOwner : Party
+--         do
+--           create this with
+--             owner = newOwner
+
+-- setup : Script AssetId
+-- setup = script do
+--   alice <- allocatePartyWithHint "Alice" (PartyIdHint "Alice")
+--   bob <- allocatePartyWithHint "Bob" (PartyIdHint "Bob")
+
+--   aliceTV <- submit alice do
+--     createCmd Asset with
+--       issuer = alice
+--       owner = alice
+--       name = "TV"
+
+--   bobTV <- submit alice do
+--     exerciseCmd aliceTV Give with newOwner = bob
+
+--   submit bob do
+--     exerciseCmd bobTV Give with newOwner = alice
