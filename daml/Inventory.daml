@@ -1,34 +1,41 @@
 module Inventory where
 
+import PriceWatch
+import Stall
+
 type ProductId = ContractId Product
+type StallCid = ContractId Stall
 type InventoryCid = ContractId Inventory
+type PriceWatchCid = ContractId PriceWatch
 
 data ProductType = Crops | Livestock | Aquatic | Pending deriving (Eq, Show)
 
 template Product
   with
-    producer  : Party
-    owner     : Party
-    label     : Text
-    quantity  : Decimal
-    unit      : Text
-    observers : [Party]
+    producer      : Party
+    owner         : Party
+    label         : Text
+    quantity      : Decimal
+    productSymbol : Text
+    unit          : Text
+    observers     : [Party]
   where
     signatory producer
     observer observers
 
     controller producer can
-      Add_Inventory : InventoryCid
-        with
-          newOwner : Party
+      AddInventory : InventoryCid with
+          owner    : Party
+          stall    : StallCid
+          thisPricing : PriceWatchCid
         do
           thisProduct <- create this
           create Inventory with
             product = thisProduct
-            productSymbol = label
             productType = Pending
-            owner =  newOwner
-            vendor = newOwner
+            pricing = thisPricing
+            owner
+            stall
 
       SetQuantity : ProductId
         with
@@ -47,13 +54,15 @@ template Product
 template Inventory
   with
     owner         : Party
-    vendor        : Party
+    stall         : StallCid
     product       : ProductId
-    productSymbol : Text
+    pricing       : PriceWatchCid
     productType   : ProductType
   where
     signatory owner
-    observer vendor
+    observer stall
+
+    ensure product.productSymbol == pricing.productSymbol
 
     controller owner can
       Set_Type : InventoryCid
@@ -61,5 +70,9 @@ template Inventory
         do create this with productType = usedType
 
       Settle : ProductId
-        with buyer : Party
-        do exercise product Transfer with newOwner = buyer
+        with
+          buyer : Party
+          quantity: Decimal
+        do
+          productCid <- fetch product
+          exercise product Transfer with newOwner = buyer
