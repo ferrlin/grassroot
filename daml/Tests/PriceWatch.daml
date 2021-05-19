@@ -2,9 +2,7 @@
 
 module Tests.PriceWatch where
 
-import DA.Assert
 import Daml.Script
-
 import PriceWatch
 
 pw_test = do
