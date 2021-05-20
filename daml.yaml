@@ -14,7 +14,7 @@ parties:
   - Owner
   - Issuer
   - Buyer
-version: 0.0.1
+version: 0.3.1
 # exposed-modules:
   # - Main
 dependencies:
