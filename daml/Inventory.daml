@@ -1,12 +1,10 @@
 module Inventory where
 
 import PriceWatch
-import Stall
 
 type ProductId = ContractId Product
 type StallCid = ContractId Stall
 type InventoryCid = ContractId Inventory
-type PriceWatchCid = ContractId PriceWatch
 
 data ProductType = Crops | Livestock | Aquatic | Pending deriving (Eq, Show)
 
@@ -18,33 +16,27 @@ template Product
     quantity      : Decimal
     productSymbol : Text
     unit          : Text
-    observers     : [Party]
   where
     signatory producer
-    observer observers
 
     controller producer can
       AddInventory : InventoryCid with
-          owner    : Party
-          stall    : StallCid
-          thisPricing : PriceWatchCid
+          receiver    : Party
+          stall       : Stall
+          thisPricing : PriceWatch
         do
-          thisProduct <- create this
           create Inventory with
-            product = thisProduct
+            product = this
             productType = Pending
             pricing = thisPricing
-            owner
+            owner = receiver
+            observers = [receiver]
             stall
 
       SetQuantity : ProductId
         with
            newQuantity : Decimal
         do create this with quantity = newQuantity
-
-      Disclose : ProductId
-        with users : [Party]
-        do create this with observers = users
 
     controller owner can
       Transfer : ProductId
@@ -54,13 +46,14 @@ template Product
 template Inventory
   with
     owner         : Party
-    stall         : StallCid
-    product       : ProductId
-    pricing       : PriceWatchCid
+    stall         : Stall
+    product       : Product
+    pricing       : PriceWatch
     productType   : ProductType
+    observers     : [Party]
   where
     signatory owner
-    observer stall
+    observer observers
 
     ensure product.productSymbol == pricing.productSymbol
 
@@ -69,10 +62,41 @@ template Inventory
         with usedType : ProductType
         do create this with productType = usedType
 
+      Disclose : InventoryCid
+        with users : [Party]
+        do create this with observers = users
+
+
+type OfferId = ContractId Offer
+
+template Stall
+  with
+    owner    : Party
+    buyers   : [Party]
+    offers   : [OfferId]
+    regulator: Party
+  where
+    signatory owner, regulator
+    observer buyers
+
+    controller buyers can
+      BuyItem : ()
+        do return ()
+
+template Offer
+  with
+    coop      : Party
+    inventory : InventoryCid
+    users     : [Party]
+  where
+    signatory coop
+    observer users
+
+    controller coop can
       Settle : ProductId
         with
           buyer : Party
-          quantity: Decimal
         do
-          productCid <- fetch product
-          exercise product Transfer with newOwner = buyer
+          invId <- fetch inventory
+          prodId <- create invId.product
+          exercise prodId Transfer with newOwner = buyer

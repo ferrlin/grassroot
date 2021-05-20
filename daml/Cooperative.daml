@@ -1,0 +1,53 @@
+{-# LANGUAGE ApplicativeDo #-}
+module Cooperative where
+
+import Inventory
+
+type VendorInvitedId = ContractId VendorInvite
+
+template Cooperative
+  with
+    coop    : Party
+    vendors : [Party]
+    offers  : [OfferId]
+  where
+    signatory coop
+    controller coop can
+      InviteVendor : (StallCid, VendorInvitedId)
+        with
+           vendor : Party
+        do
+           stall <- create Stall  with owner = vendor, regulator = coop, buyers = [], offers = []
+           invite <- create VendorInvite with ..
+           pure (stall, invite)
+
+template VendorInvite
+  with
+    coop : Party
+    vendor : Party
+  where
+    signatory coop
+
+    controller vendor can
+       AcceptInvite : ContractId OccupyStall
+         do
+           create OccupyStall with ..
+
+template OccupyStall
+   with
+     coop : Party
+     vendor : Party
+   where
+     signatory coop, vendor
+
+     controller vendor can
+        nonconsuming ForSale : (StallCid, OfferId)
+          with
+            stallCid     : StallCid
+            inventoryCid : InventoryCid
+          do
+            stall <- fetch stallCid
+            disclosedInv <- exercise inventoryCid Disclose with users = stall.buyers
+            offer <- create Offer with inventory = disclosedInv, users = stall.buyers, coop
+            stallWithOffer <- create stall with offers = offer :: stall.offers
+            pure (stallWithOffer, offer)
