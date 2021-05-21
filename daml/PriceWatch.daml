@@ -22,9 +22,7 @@ template PriceWatch
       Propose : PricingProposalCid
         with
           newOwner : Party
-        do
-          pricingCid <- create this with locked = False
-          create PricingProposal with issuer, pricing = pricingCid, owner = newOwner
+        do create PricingProposal with pricing = this, newOwner
 
       SetBasePrice : PriceWatchCid
         with
@@ -35,29 +33,23 @@ template PriceWatch
         do toggleLockPricing
 
     controller owner can
-      Confirm : PriceWatchCid
-        with
-          confirmed : Party
-        do create this with owner = confirmed
-
       SetRetailPrice : PriceWatchCid
         with
           newPrice : Decimal
         do
-          assertMsg "Retail price is currently locked. You are not allowed to change its price" (this.locked == True)
+          assertMsg "Retail price is currently locked. You are not allowed to change its price" (this.locked /= True)
           create this with retailPrice = newPrice
 
 template PricingProposal
   with
-    issuer   : Party
-    pricing  : PriceWatchCid
-    owner : Party
+    pricing  : PriceWatch
+    newOwner : Party
   where
-    signatory issuer
+    signatory pricing.issuer, pricing.owner
 
-    controller owner can
+    controller newOwner can
       Accept : PriceWatchCid
-        do exercise pricing Confirm with confirmed = owner
+        do create pricing with owner = newOwner
 
       Decline : ()
         do return ()

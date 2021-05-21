@@ -38,6 +38,6 @@ pw_test = do
   priceWatchUpdatedBPCid' <- submitMustFail alice do
     exerciseCmd priceWatchUpdatedBPCid SetBasePrice with newBasePrice = 0.60
 
-  submit mra do exerciseCmd priceWatchAliceCid ToggleLockPricing
+  submit mra do exerciseCmd priceWatchUpdatedBPCid ToggleLockPricing
 
   submitMustFail alice do exerciseCmd priceWatchAliceCid ToggleLockPricing
