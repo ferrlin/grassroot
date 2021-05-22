@@ -24,6 +24,7 @@ pw_test = do
         basePrice = 0.45
         retailPrice = 1.20
         currency
+        unit = "mg"
         locked = False
       Propose with
         newOwner = alice
@@ -31,7 +32,6 @@ pw_test = do
   priceWatchAliceCid <- submit alice do
     exerciseCmd proposalAliceCid Accept
 
-  -- return priceWatchAliceCid
   priceWatchUpdatedBPCid <- submit alice do
     exerciseCmd priceWatchAliceCid SetRetailPrice with newPrice = 0.80
 

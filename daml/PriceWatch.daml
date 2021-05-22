@@ -11,6 +11,7 @@ template PriceWatch
     basePrice      : Decimal
     retailPrice    : Decimal
     currency       : Text
+    unit           : Text
     locked         : Bool
 
   where

@@ -4,6 +4,7 @@ module Cooperative where
 import Inventory
 
 type VendorInvitedId = ContractId VendorInvite
+type StallPermitCid = ContractId StallPermit
 
 template Cooperative
   with
@@ -19,7 +20,7 @@ template Cooperative
         do
            stall <- create Stall  with owner = vendor, regulator = coop, buyers = [], offers = []
            invite <- create VendorInvite with ..
-           pure (stall, invite)
+           return (stall, invite)
 
 template VendorInvite
   with
@@ -29,11 +30,11 @@ template VendorInvite
     signatory coop
 
     controller vendor can
-       AcceptInvite : ContractId OccupyStall
+       AcceptInvitation : StallPermitCid
          do
-           create OccupyStall with ..
+           create StallPermit with ..
 
-template OccupyStall
+template StallPermit
    with
      coop : Party
      vendor : Party
@@ -48,6 +49,6 @@ template OccupyStall
           do
             stall <- fetch stallCid
             disclosedInv <- exercise inventoryCid Disclose with users = stall.buyers
-            offer <- create Offer with inventory = disclosedInv, users = stall.buyers, coop
+            offer <- create Offer with inventory = disclosedInv, users = stall.buyers, vendor
             stallWithOffer <- create stall with offers = offer :: stall.offers
             pure (stallWithOffer, offer)

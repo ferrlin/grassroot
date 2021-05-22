@@ -15,7 +15,6 @@ template Product
     label         : Text
     quantity      : Decimal
     productSymbol : Text
-    unit          : Text
   where
     signatory producer
 
@@ -25,13 +24,15 @@ template Product
           stall       : Stall
           thisPricing : PriceWatch
         do
+          pricingCid <- create thisPricing
+          stallCid <- create stall
           create Inventory with
             product = this
             productType = Pending
-            pricing = thisPricing
+            pricing = pricingCid
             owner = receiver
             observers = [receiver]
-            stall
+            stall = stallCid
 
       SetQuantity : ProductId
         with
@@ -46,26 +47,25 @@ template Product
 template Inventory
   with
     owner         : Party
-    stall         : Stall
+    stall         : StallCid
     product       : Product
-    pricing       : PriceWatch
+    pricing       : PriceWatchCid
     productType   : ProductType
     observers     : [Party]
   where
     signatory owner
     observer observers
 
-    ensure product.productSymbol == pricing.productSymbol
+    -- ensure product.productSymbol == pricing.productSymbol
 
     controller owner can
-      Set_Type : InventoryCid
-        with usedType : ProductType
-        do create this with productType = usedType
+      SetProductType : InventoryCid
+        with producType : ProductType
+        do create this with productType
 
       Disclose : InventoryCid
         with users : [Party]
         do create this with observers = users
-
 
 type OfferId = ContractId Offer
 
@@ -76,7 +76,7 @@ template Stall
     offers   : [OfferId]
     regulator: Party
   where
-    signatory owner, regulator
+    signatory regulator
     observer buyers
 
     controller buyers can
@@ -85,14 +85,14 @@ template Stall
 
 template Offer
   with
-    coop      : Party
-    inventory : InventoryCid
-    users     : [Party]
+    vendor      : Party
+    inventory   : InventoryCid
+    users       : [Party]
   where
-    signatory coop
+    signatory vendor
     observer users
 
-    controller coop can
+    controller vendor can
       Settle : ProductId
         with
           buyer : Party

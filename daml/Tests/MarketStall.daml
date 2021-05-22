@@ -1,3 +1,60 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module MarketStall where
+module Tests.MarketStall where
+
+import Daml.Script
+import PriceWatch
+import Cooperative
+import Inventory
+
+ms_test = do
+  alice  <- allocateParty "Alice"
+  bob    <- allocateParty "Bob"
+  coop   <- allocateParty "Coop"
+  greg   <- allocateParty "Greg"
+  jen    <- allocateParty "Jen"
+  rusty  <- allocateParty "Rusty"
+
+  (gregStallCid, gregInviteCid) <- submit coop do
+    createAndExerciseCmd
+      Cooperative with
+        coop
+        vendors = []
+        offers = []
+      InviteVendor with
+        vendor = greg
+
+  gregStallPermitCid <- submit greg do exerciseCmd gregInviteCid AcceptInvitation
+
+    -- Add Pricing for Barley
+  gregPricingPropCid <- submit coop do
+    createAndExerciseCmd
+      PriceWatch with
+        issuer = coop
+        owner = coop
+        productSymbol = "BRY"
+        basePrice = 4.25
+        retailPrice = 4.25
+        currency = "USD"
+        unit = "mg"
+        locked = False
+      Propose with
+        newOwner = greg
+
+  barleyPricingCid <- submit greg do exerciseCmd gregPricingPropCid Accept
+
+  -- Add Product to sell
+  gregInventoryCid <- submit greg do
+    createAndExerciseCmd
+      Product with
+        producer = rusty
+        owner = rusty
+        label = "Barley"
+        quantity = 30
+        productSymbol = "BRY"
+      AddInventory with
+        stall = gregStallCid
+        receiver = greg
+        thisPricing = barleyPricingCid
+
+  submit greg do exercise gregStallPermitCid ForSale with  stallCid = gregStallCid, inventoryCid = gregInventoryCid
