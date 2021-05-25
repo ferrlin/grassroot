@@ -10,7 +10,7 @@ template Cooperative
   with
     coop    : Party
     vendors : [Party]
-    offers  : [OfferId]
+    offers  : [ContractId Offer]
   where
     signatory coop
     controller coop can
@@ -42,13 +42,13 @@ template StallPermit
      signatory coop, vendor
 
      controller vendor can
-        nonconsuming ForSale : (StallCid, OfferId)
+        nonconsuming ForSale : (ContractId Stall, ContractId Offer)
           with
-            stallCid     : StallCid
-            inventoryCid : InventoryCid
+            stallCid     : ContractId Stall
+            inventoryCid : ContractId Inventory
           do
             stall <- fetch stallCid
             disclosedInv <- exercise inventoryCid Disclose with users = stall.buyers
             offer <- create Offer with inventory = disclosedInv, users = stall.buyers, vendor
             stallWithOffer <- create stall with offers = offer :: stall.offers
-            pure (stallWithOffer, offer)
+            return (stallWithOffer, offer)

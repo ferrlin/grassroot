@@ -57,4 +57,4 @@ ms_test = do
         receiver = greg
         thisPricing = barleyPricingCid
 
-  submit greg do exercise gregStallPermitCid ForSale with  stallCid = gregStallCid, inventoryCid = gregInventoryCid
+  submit greg do exerciseCmd gregStallPermitCid ForSale with  stallCid = gregStallCid, inventoryCid = gregInventoryCid

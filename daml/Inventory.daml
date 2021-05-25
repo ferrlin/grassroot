@@ -13,7 +13,7 @@ template Product
     producer      : Party
     owner         : Party
     label         : Text
-    quantity      : Decimal
+    quantity      : Int
     productSymbol : Text
   where
     signatory producer
@@ -21,22 +21,20 @@ template Product
     controller producer can
       AddInventory : InventoryCid with
           receiver    : Party
-          stall       : Stall
-          thisPricing : PriceWatch
+          stall       : StallCid
+          thisPricing : PriceWatchCid
         do
-          pricingCid <- create thisPricing
-          stallCid <- create stall
           create Inventory with
             product = this
             productType = Pending
-            pricing = pricingCid
+            pricing = thisPricing
             owner = receiver
             observers = [receiver]
-            stall = stallCid
+            stall = stall
 
       SetQuantity : ProductId
         with
-           newQuantity : Decimal
+           newQuantity : Int
         do create this with quantity = newQuantity
 
     controller owner can
