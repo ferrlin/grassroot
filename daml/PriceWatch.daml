@@ -2,7 +2,7 @@ module PriceWatch where
 
 type PriceWatchCid = ContractId PriceWatch
 type PricingProposalCid = ContractId PricingProposal
-
+type RetailUpdateApprovalCid = ContractId RetailUpdateApproval
 template PriceWatch
   with
     issuer         : Party
@@ -15,7 +15,7 @@ template PriceWatch
     locked         : Bool
 
   where
-    signatory owner, issuer
+    signatory issuer
 
     let toggleLockPricing = create this with locked = not(this.locked)
 
@@ -34,12 +34,12 @@ template PriceWatch
         do toggleLockPricing
 
     controller owner can
-      SetRetailPrice : PriceWatchCid
+      SetRetailPrice : RetailUpdateApprovalCid
         with
           newPrice : Decimal
         do
           assertMsg "Retail price is currently locked. You are not allowed to change its price" (this.locked /= True)
-          create this with retailPrice = newPrice
+          create RetailUpdateApproval with updatedPricing = (this with retailPrice = newPrice), approver = issuer
 
 template PricingProposal
   with
@@ -54,3 +54,19 @@ template PricingProposal
 
       Decline : ()
         do return ()
+
+template RetailUpdateApproval
+  with
+    approver : Party
+    updatedPricing : PriceWatch
+  where
+    signatory updatedPricing.owner, approver
+
+    controller approver can
+      Approved : PriceWatchCid
+        do
+          create updatedPricing with locked = True
+
+      Denied : ()
+        do return ()
+

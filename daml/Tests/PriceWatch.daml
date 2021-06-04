@@ -19,7 +19,7 @@ pw_test = do
     createAndExerciseCmd
       PriceWatch with
         issuer
-        owner = mra
+        owner = issuer
         productSymbol = "TMT"
         basePrice = 0.45
         retailPrice = 1.20
@@ -32,12 +32,14 @@ pw_test = do
   priceWatchAliceCid <- submit alice do
     exerciseCmd proposalAliceCid Accept
 
-  priceWatchUpdatedBPCid <- submit alice do
+  retailPriceForApprovalCid <- submit alice do
     exerciseCmd priceWatchAliceCid SetRetailPrice with newPrice = 0.80
 
-  priceWatchUpdatedBPCid' <- submitMustFail alice do
-    exerciseCmd priceWatchUpdatedBPCid SetBasePrice with newBasePrice = 0.60
+  pricingApprovedCid <- submit issuer do exerciseCmd retailPriceForApprovalCid Approved
 
-  submit mra do exerciseCmd priceWatchUpdatedBPCid ToggleLockPricing
+  priceWatchUpdatedBPCid' <- submitMustFail alice do
+    exerciseCmd pricingApprovedCid SetBasePrice with newBasePrice = 0.60
+
+  submit mra do exerciseCmd pricingApprovedCid ToggleLockPricing
 
   submitMustFail alice do exerciseCmd priceWatchAliceCid ToggleLockPricing
