@@ -29,16 +29,15 @@ pw_test = do
       Propose with
         newOwner = alice
 
-  priceWatchAliceCid <- submit alice do
-    exerciseCmd proposalAliceCid Accept
+  priceWatchAliceCid <- submit alice do exerciseCmd proposalAliceCid Accept
 
-  retailPriceForApprovalCid <- submit alice do
-    exerciseCmd priceWatchAliceCid SetRetailPrice with newPrice = 0.80
+  retailPriceForApprovalCid <- submit alice do exerciseCmd priceWatchAliceCid SetRetailPrice with newPrice = 0.80
 
   pricingApprovedCid <- submit issuer do exerciseCmd retailPriceForApprovalCid Approved
 
-  priceWatchUpdatedBPCid' <- submitMustFail alice do
-    exerciseCmd pricingApprovedCid SetBasePrice with newBasePrice = 0.60
+  submitMustFail alice do exerciseCmd retailPriceForApprovalCid Approved
+
+  submitMustFail alice do exerciseCmd pricingApprovedCid SetBasePrice with newBasePrice = 0.60
 
   submit mra do exerciseCmd pricingApprovedCid ToggleLockPricing
 
