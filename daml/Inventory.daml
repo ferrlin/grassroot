@@ -2,7 +2,7 @@ module Inventory where
 
 import PriceWatch
 
-type ProductId = ContractId Product
+type ProductCid = ContractId Product
 type StallCid = ContractId Stall
 type InventoryCid = ContractId Inventory
 
@@ -18,35 +18,33 @@ template Product
   where
     signatory producer
 
-    controller producer can
-      AddInventory : InventoryCid with
+    controller owner can
+      nonconsuming AddInventory : InventoryCid with
           receiver    : Party
-          stall       : StallCid
           thisPricing : PriceWatchCid
         do
+          productCid <- create this
+          archive self
           create Inventory with
-            product = this
+            product = productCid
             productType = Pending
             pricing = thisPricing
             owner = receiver
             observers = [receiver]
-            stall = stall
-
-      SetQuantity : ProductId
+      SetQuantity : ProductCid
         with
            newQuantity : Int
         do create this with quantity = newQuantity
 
     controller owner can
-      Transfer : ProductId
+      Transfer : ProductCid
         with newOwner : Party
         do create this with owner = newOwner
 
 template Inventory
   with
     owner         : Party
-    stall         : StallCid
-    product       : Product
+    product       : ProductCid
     pricing       : PriceWatchCid
     productType   : ProductType
     observers     : [Party]
@@ -54,7 +52,7 @@ template Inventory
     signatory owner
     observer observers
 
-    -- ensure product.productSymbol == pricing.productSymbol
+    -- ensure product.productSymbol ==  pricing.productSymbol
 
     controller owner can
       SetProductType : InventoryCid
@@ -74,7 +72,7 @@ template Stall
     offers   : [OfferId]
     regulator: Party
   where
-    signatory regulator
+    signatory owner
     observer buyers
 
     controller buyers can
@@ -85,16 +83,13 @@ template Offer
   with
     vendor      : Party
     inventory   : InventoryCid
-    users       : [Party]
   where
     signatory vendor
-    observer users
 
     controller vendor can
-      Settle : ProductId
+      Settle : ProductCid
         with
           buyer : Party
         do
-          invId <- fetch inventory
-          prodId <- create invId.product
-          exercise prodId Transfer with newOwner = buyer
+          inventoryCid <- fetch inventory
+          exercise inventoryCid.product Transfer with newOwner = buyer

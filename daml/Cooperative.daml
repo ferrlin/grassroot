@@ -5,6 +5,7 @@ import Inventory
 
 type VendorInvitedId = ContractId VendorInvite
 type StallPermitCid = ContractId StallPermit
+type CoopCid = ContractId Cooperative
 
 template Cooperative
   with
@@ -14,13 +15,14 @@ template Cooperative
   where
     signatory coop
     controller coop can
-      InviteVendor : (StallCid, VendorInvitedId)
+      nonconsuming InviteVendor : (CoopCid, VendorInvitedId)
         with
            vendor : Party
         do
-           stall <- create Stall  with owner = vendor, regulator = coop, buyers = [], offers = []
+           coopId <- create this with vendors = vendor :: vendors
+           archive self
            invite <- create VendorInvite with ..
-           return (stall, invite)
+           return (coopId, invite)
 
 template VendorInvite
   with
@@ -39,16 +41,13 @@ template StallPermit
      coop : Party
      vendor : Party
    where
-     signatory coop, vendor
-
+     signatory vendor
      controller vendor can
-        nonconsuming ForSale : (ContractId Stall, ContractId Offer)
+        nonconsuming ForSale : (ContractId Stall,ContractId Offer)
           with
-            stallCid     : ContractId Stall
             inventoryCid : ContractId Inventory
           do
-            stall <- fetch stallCid
-            disclosedInv <- exercise inventoryCid Disclose with users = stall.buyers
-            offer <- create Offer with inventory = disclosedInv, users = stall.buyers, vendor
-            stallWithOffer <- create stall with offers = offer :: stall.offers
+            inventory <- fetch inventoryCid
+            offer <- create Offer with inventory = inventoryCid, vendor
+            stallWithOffer <- create Stall with owner = vendor, regulator = coop, buyers = [],offers = [offer]
             return (stallWithOffer, offer)
