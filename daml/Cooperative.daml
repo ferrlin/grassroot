@@ -32,9 +32,11 @@ template VendorInvite
     signatory coop
 
     controller vendor can
-       AcceptInvitation : StallPermitCid
+       AcceptInvitation : (ContractId Stall, StallPermitCid)
          do
-           create StallPermit with ..
+           stall <- create Stall with owner = vendor, regulator = coop, buyers = [],offers = []
+           stallPermit <- create StallPermit with ..
+           return (stall, stallPermit)
 
 template StallPermit
    with
@@ -45,9 +47,12 @@ template StallPermit
      controller vendor can
         nonconsuming ForSale : (ContractId Stall,ContractId Offer)
           with
+            stallCid : ContractId Stall
             inventoryCid : ContractId Inventory
           do
             inventory <- fetch inventoryCid
+            stall <- fetch stallCid
             offer <- create Offer with inventory = inventoryCid, vendor
-            stallWithOffer <- create Stall with owner = vendor, regulator = coop, buyers = [],offers = [offer]
+            stallWithOffer <- create stall with offers = offer :: stall.offers
+            archive stallCid
             return (stallWithOffer, offer)

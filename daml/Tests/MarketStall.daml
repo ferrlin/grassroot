@@ -24,7 +24,7 @@ ms_test = do
       InviteVendor with
         vendor = greg
 
-  gregStallPermitCid <- submit greg do exerciseCmd gregInviteCid AcceptInvitation
+  (gregStallCid, gregStallPermitCid) <- submit greg do exerciseCmd gregInviteCid AcceptInvitation
 
     -- Add Pricing for Barley
   gregPricingPropCid <- submit coop do
@@ -54,4 +54,4 @@ ms_test = do
 
   gregInvCid <- submit greg do exerciseCmd gregProductCid AddInventory with receiver = greg, thisPricing = barleyPricingCid
 
-  submit greg do exerciseCmd gregStallPermitCid ForSale with inventoryCid = gregInvCid
+  submit greg do exerciseCmd gregStallPermitCid ForSale with stallCid = gregStallCid, inventoryCid = gregInvCid

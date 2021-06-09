@@ -24,12 +24,10 @@ template PriceWatch
         with
           newOwner : Party
         do create PricingProposal with pricing = this, newOwner
-
       SetBasePrice : PriceWatchCid
         with
           newBasePrice : Decimal
         do create this  with basePrice = newBasePrice
-
       ToggleLockPricing : PriceWatchCid
         do toggleLockPricing
 
@@ -47,11 +45,9 @@ template PricingProposal
     newOwner : Party
   where
     signatory pricing.issuer, pricing.owner
-
     controller newOwner can
       Accept : PriceWatchCid
         do create pricing with owner = newOwner
-
       Decline : ()
         do return ()
 
@@ -61,12 +57,10 @@ template RetailUpdateApproval
     updatedPricing : PriceWatch
   where
     signatory updatedPricing.owner, approver
-
     controller approver can
       Approved : PriceWatchCid
         do
           create updatedPricing with locked = True
-
       Denied : ()
         do return ()
 
