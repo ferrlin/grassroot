@@ -23,14 +23,12 @@ template Product
           receiver    : Party
           thisPricing : PriceWatchCid
         do
-          productCid <- create this
-          archive self
           create Inventory with
-            product = productCid
+            product = self
             productType = Pending
             pricing = thisPricing
             owner = receiver
-            observers = [receiver]
+            observers = []
       SetQuantity : ProductCid
         with
            newQuantity : Int
