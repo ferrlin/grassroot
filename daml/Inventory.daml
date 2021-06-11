@@ -23,6 +23,8 @@ template Product
           receiver    : Party
           thisPricing : PriceWatchCid
         do
+          pw <- fetch thisPricing
+          assert (this.productSymbol == pw.productSymbol)
           create Inventory with
             product = self
             productType = Pending
@@ -49,8 +51,6 @@ template Inventory
   where
     signatory owner
     observer observers
-
-    -- ensure product.productSymbol ==  pricing.productSymbol
 
     controller owner can
       SetProductType : InventoryCid

@@ -8,13 +8,9 @@ source: daml
 # init-script: Main:setup
 parties:
   - Alice
-  - Bob
+  - Greg
   - MRA
-  - Vendor
-  - Owner
-  - Issuer
-  - Buyer
-version: 0.3.1
+version: 0.3.3
 # exposed-modules:
   # - Main
 dependencies:

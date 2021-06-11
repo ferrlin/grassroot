@@ -15,16 +15,19 @@ ms_test = do
   jen    <- allocateParty "Jen"
   rusty  <- allocateParty "Rusty"
 
-  (coopCid, gregInviteCid) <- submit coop do
-    createAndExerciseCmd
-      Cooperative with
-        coop
-        vendors = []
-        offers = []
-      InviteVendor with
-        vendor = greg
+  coopCid <- coop `submit` do createCmd
+    Cooperative with
+      coop
+      vendors = []
+      offers = []
+
+  (coopCid, gregInviteCid) <- coop `submit` do exerciseCmd coopCid InviteVendor with vendor = greg
+  (coopCid, jenInviteCid) <- coop `submit` do exerciseCmd coopCid InviteVendor with vendor = jen
+  (coopCid, bobInviteCid) <- coop `submit` do exerciseCmd coopCid InviteVendor with vendor = bob
 
   (gregStallCid, gregStallPermitCid) <- submit greg do exerciseCmd gregInviteCid AcceptInvitation
+
+
 
     -- Add Pricing for Barley
   gregPricingPropCid <- submit coop do
