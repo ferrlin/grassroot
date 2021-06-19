@@ -3,64 +3,84 @@ module PriceWatch where
 type PriceWatchCid = ContractId PriceWatch
 type PricingProposalCid = ContractId PricingProposal
 type RetailUpdateApprovalCid = ContractId RetailUpdateApproval
+
+data PriceDetail = PriceDetail
+  with
+    productSymbol : Text
+    basePrice     : Decimal
+    retailPrice   : Decimal
+    currency      : Text
+    unit          : Text
+    locked        : Bool
+  deriving (Eq, Show)
+
 template PriceWatch
   with
     issuer         : Party
-    owner          : Party
-    productSymbol  : Text
-    basePrice      : Decimal
-    retailPrice    : Decimal
-    currency       : Text
-    unit           : Text
-    locked         : Bool
-
+    details        : PriceDetail
   where
     signatory issuer
 
-    let toggleLockPricing = create this with locked = not(this.locked)
+    let
+       updatedLock = details with locked = not(details.locked)
+       toggleLockPricing = create this with details = updatedLock
 
     controller issuer can
-      Propose : PricingProposalCid
+      nonconsuming Propose : PricingProposalCid
         with
           newOwner : Party
-        do create PricingProposal with pricing = this, newOwner
+        do create PricingProposal with proposal = this, ..
       SetBasePrice : PriceWatchCid
         with
           newBasePrice : Decimal
-        do create this  with basePrice = newBasePrice
+        do
+          let updated = details with basePrice = newBasePrice
+          create this  with  details = updated
+
       ToggleLockPricing : PriceWatchCid
         do toggleLockPricing
 
-    controller owner can
-      SetRetailPrice : RetailUpdateApprovalCid
-        with
-          newPrice : Decimal
-        do
-          assertMsg "Retail price is currently locked. You are not allowed to change its price" (this.locked /= True)
-          create RetailUpdateApproval with updatedPricing = (this with retailPrice = newPrice), approver = issuer
-
 template PricingProposal
   with
-    pricing  : PriceWatch
+    proposal : PriceWatch
     newOwner : Party
   where
-    signatory pricing.issuer, pricing.owner
+    signatory proposal.issuer
     controller newOwner can
-      Accept : PriceWatchCid
-        do create pricing with owner = newOwner
+      Accept : ContractId Pricing
+        do
+          create Pricing with owner = newOwner, issuer = proposal.issuer, details = proposal.details
       Decline : ()
         do return ()
 
 template RetailUpdateApproval
   with
     approver : Party
-    updatedPricing : PriceWatch
+    updatedPricing : Pricing
   where
     signatory updatedPricing.owner, approver
     controller approver can
-      Approved : PriceWatchCid
-        do
-          create updatedPricing with locked = True
+      Approved : ContractId Pricing
+        do create updatedPricing
+
       Denied : ()
         do return ()
+
+template Pricing
+  with
+    issuer         : Party
+    owner          : Party
+    details        : PriceDetail
+
+  where
+    signatory owner, issuer
+
+    controller owner can
+      SetRetailPrice : RetailUpdateApprovalCid
+        with
+          newPrice : Decimal
+        do
+          assertMsg "Retail price is currently locked. You are not allowed to change its price" (not details.locked)
+          let dt = details with retailPrice = newPrice, locked = True
+          create RetailUpdateApproval with updatedPricing = (this with details = dt), approver = issuer
 

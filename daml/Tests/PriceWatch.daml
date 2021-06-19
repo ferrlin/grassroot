@@ -12,33 +12,36 @@ pw_test = do
 
   let
     issuer = mra
-    currency = "EUR"
+    currency = "USD"
+    details01 = PriceDetail with
+       productSymbol = "TOMATO"
+       basePrice = 10.50
+       retailPrice = 12.75
+       currency
+       unit = "pack"
+       locked = False
 
   -- MRA propose another pricing scheme for another product
   proposalAliceCid <- submit mra do
     createAndExerciseCmd
       PriceWatch with
         issuer
-        owner = issuer
-        productSymbol = "TMT"
-        basePrice = 0.45
-        retailPrice = 1.20
-        currency
-        unit = "mg"
-        locked = False
+        details = details01
       Propose with
         newOwner = alice
 
-  priceWatchAliceCid <- submit alice do exerciseCmd proposalAliceCid Accept
+  pricingAliceCid <- submit alice do exerciseCmd proposalAliceCid Accept
 
-  retailPriceForApprovalCid <- submit alice do exerciseCmd priceWatchAliceCid SetRetailPrice with newPrice = 0.80
+  rpUpdateCid <- submit alice do exerciseCmd pricingAliceCid SetRetailPrice with newPrice = 0.80
 
-  pricingApprovedCid <- submit issuer do exerciseCmd retailPriceForApprovalCid Approved
+  submit mra do exerciseCmd rpUpdateCid Approved
 
-  submitMustFail alice do exerciseCmd retailPriceForApprovalCid Approved
+  -- pricingApprovedCid <- submit issuer do exerciseCmd retailPriceForApprovalCid Approved
 
-  submitMustFail alice do exerciseCmd pricingApprovedCid SetBasePrice with newBasePrice = 0.60
+  -- submitMustFail alice do exerciseCmd retailPriceForApprovalCid Approved
 
-  submit mra do exerciseCmd pricingApprovedCid ToggleLockPricing
+  -- submitMustFail alice do exerciseCmd pricingApprovedCid SetBasePrice with newBasePrice = 0.60
 
-  submitMustFail alice do exerciseCmd priceWatchAliceCid ToggleLockPricing
+  -- submit mra do exerciseCmd pricingApprovedCid ToggleLockPricing
+
+  -- submitMustFail alice do exerciseCmd pricingAliceCid ToggleLockPricing
