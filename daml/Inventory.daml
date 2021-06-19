@@ -21,10 +21,10 @@ template Product
     controller owner can
       nonconsuming AddInventory : InventoryCid with
           receiver    : Party
-          thisPricing : PriceWatchCid
+          thisPricing : PricingCid
         do
           pw <- fetch thisPricing
-          assert (this.productSymbol == pw.productSymbol)
+          assert (this.productSymbol == pw.details.productSymbol)
           create Inventory with
             product = self
             productType = Pending
@@ -41,11 +41,12 @@ template Product
         with newOwner : Party
         do create this with owner = newOwner
 
+type PricingCid = ContractId Pricing
 template Inventory
   with
     owner         : Party
     product       : ProductCid
-    pricing       : PriceWatchCid
+    pricing       : PricingCid
     productType   : ProductType
     observers     : [Party]
   where

@@ -28,19 +28,16 @@ ms_test = do
   (gregStallCid, gregStallPermitCid) <- submit greg do exerciseCmd gregInviteCid AcceptInvitation
 
 
+  let priceDetails = PriceDetail
+        with
+          productSymbol = "BRY", basePrice = 4.25, retailPrice = 4.25, currency = "USD", unit = "pack", locked = False
 
     -- Add Pricing for Barley
   gregPricingPropCid <- submit coop do
     createAndExerciseCmd
       PriceWatch with
         issuer = coop
-        owner = coop
-        productSymbol = "BRY"
-        basePrice = 4.25
-        retailPrice = 4.25
-        currency = "USD"
-        unit = "mg"
-        locked = False
+        details = priceDetails
       Propose with
         newOwner = greg
 
